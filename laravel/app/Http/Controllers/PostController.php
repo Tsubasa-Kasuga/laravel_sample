@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Post;
 use Illuminate\Http\Request;
 
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+
 class PostController extends Controller
 {
     /**
@@ -14,7 +17,10 @@ class PostController extends Controller
      */
     public function index()
     {
-        //
+        // Postテーブルからデータを全件取得
+        $posts = Post::all();
+        // viewに$postsをpostsとして渡して遷移
+        return view('posts.index', ['posts' => $posts]);
     }
 
     /**
@@ -24,7 +30,8 @@ class PostController extends Controller
      */
     public function create()
     {
-        //
+        // viewに遷移
+        return view('posts.create');
     }
 
     /**
@@ -34,8 +41,20 @@ class PostController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
-    {
-        //
+    {   
+        // ログインユーザーのIDを取得
+        $id = Auth::id();
+        // インスタンス作成
+        $post = new Post();
+        // $postにbodyとidをつめる
+        $post->body = $request->body;
+        $post->user_id = $id;
+
+        // DB保存
+        $post->save();
+
+        // 一覧ページにリダイレクト
+       return redirect()->to('/posts');
     }
 
     /**
@@ -45,8 +64,13 @@ class PostController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function show(Post $post)
-    {
-        //
+    {   
+        // postに紐づいたUserを取り出す
+        $usr_id = $post->user_id;
+        $user = DB::table('users')->where('id', $usr_id)->first();
+        
+        // viewに遷移
+        return view('posts.detail',['post' => $post,'user' => $user]);
     }
 
     /**
@@ -55,9 +79,10 @@ class PostController extends Controller
      * @param  \App\Post  $post
      * @return \Illuminate\Http\Response
      */
-    public function edit(Post $post)
+    public function edit($id)
     {
-        //
+        $post = Post::findOrFail($id);
+        return view('posts.edit',['post' => $post]);
     }
 
     /**
@@ -67,9 +92,18 @@ class PostController extends Controller
      * @param  \App\Post  $post
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Post $post)
+    public function update(Request $request)
     {
-        //
+        $id = $request->post_id;
+        
+        //レコードを検索
+        $post = Post::findOrFail($id);
+        $post->body = $request->body;
+        
+        //保存（更新）
+        $post->save();
+        
+        return redirect()->to('/posts');
     }
 
     /**
@@ -78,8 +112,12 @@ class PostController extends Controller
      * @param  \App\Post  $post
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Post $post)
+    public function destroy($id)
     {
-        //
+        $post = Post::find($id);
+        // 削除
+        $post->delete();
+
+        return redirect()->to('/posts');
     }
 }
